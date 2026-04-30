@@ -11,15 +11,15 @@
             @csrf
 
             {{-- Token (hidden) --}}
-            <input type="hidden" name="token" value="{{ $request->route('token') }}">
+            <input type="hidden" name="token" value="{{ $token }}">
 
             {{-- Email (pre-filled) --}}
             <div>
                 <label for="email" class="block mb-2">Email Address</label>
                 <input id="email" type="email" name="email"
-                       value="{{ old('email', $request->email) }}"
-                       class="input-field w-full rounded-xl px-4 py-3 text-sm"
-                       placeholder="you@example.com" required autofocus>
+                    value="{{ old('email', $email) }}"
+                    class="input-field w-full rounded-xl px-4 py-3 text-sm"
+                    placeholder="you@example.com" required autofocus>
                 @error('email')
                     <p class="text-red-400 text-xs mt-1.5">{{ $message }}</p>
                 @enderror
