@@ -1,0 +1,142 @@
+1. Error Messae
+
+Fatal error: Uncaught Error: Call to undefined method Illuminate\Foundation\Configuration\Middleware::redirectAuthenticatedTo() in C:\laragon\www\react-app\bootstrap\app.php:18
+Stack trace:
+#0 C:\laragon\www\react-app\vendor\laravel\framework\src\Illuminate\Foundation\Configuration\ApplicationBuilder.php(308): {closure}(Object(Illuminate\Foundation\Configuration\Middleware))
+#1 C:\laragon\www\react-app\vendor\laravel\framework\src\Illuminate\Container\Container.php(1618): Illuminate\Foundation\Configuration\ApplicationBuilder->Illuminate\Foundation\Configuration\{closure}(Object(Illuminate\Foundation\Console\Kernel), Object(Illuminate\Foundation\Application))
+#2 C:\laragon\www\react-app\vendor\laravel\framework\src\Illuminate\Container\Container.php(1556): Illuminate\Container\Container->fireCallbackArray(Object(Illuminate\Foundation\Console\Kernel), Array)
+#3 C:\laragon\www\react-app\vendor\laravel\framework\src\Illuminate\Container\Container.php(1542): Illuminate\Container\Container->fireAfterResolvingCallbacks('Illuminate\\Cont...', Object(Illuminate\Foundation\Console\Kernel))
+#4 C:\laragon\www\react-app\vendor\laravel\framework\src\Illuminate\Container\Container.php(951): Illuminate\Container\Container->fireResolvingCallbacks('Illuminate\\Cont...', Object(Illuminate\Foundation\Console\Kernel))
+#5 C:\laragon\www\react-app\vendor\laravel\framework\src\Illuminate\Foundation\Application.php(1078): Illuminate\Container\Container->resolve('Illuminate\\Cont...', Array, true)
+#6 C:\laragon\www\react-app\vendor\laravel\framework\src\Illuminate\Container\Container.php(864): Illuminate\Foundation\Application->resolve('Illuminate\\Cont...', Array)
+#7 C:\laragon\www\react-app\vendor\laravel\framework\src\Illuminate\Foundation\Application.php(1058): Illuminate\Container\Container->make('Illuminate\\Cont...', Array)
+#8 C:\laragon\www\react-app\vendor\laravel\framework\src\Illuminate\Foundation\Application.php(1233): Illuminate\Foundation\Application->make('Illuminate\\Cont...')
+#9 C:\laragon\www\react-app\artisan(16): Illuminate\Foundation\Application->handleCommand(Object(Symfony\Component\Console\Input\ArgvInput))
+#10 {main}
+  thrown in C:\laragon\www\react-app\bootstrap\app.php on line 18
+
+  2. current bootstrap/app.php
+  <?php
+
+use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Foundation\Configuration\Middleware;
+
+return Application::configure(basePath: dirname(__DIR__))
+    ->withRouting(
+        web: __DIR__ . '/../routes/web.php',
+        commands: __DIR__ . '/../routes/console.php',
+        health: '/up',
+    )
+    ->withMiddleware(function (Middleware $middleware) {
+
+        // Simple fallback — the real role-aware redirect is handled inside
+        // app/Http/Middleware/RedirectIfAuthenticated.php which Laravel
+        // auto-discovers and uses instead of its own default.
+        $middleware->redirectAuthenticatedTo('/dashboard');
+
+        // Spatie permission middleware aliases
+        $middleware->alias([
+            'role'               => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'permission'         => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+        ]);
+
+        // Append security headers to every web response
+        $middleware->appendToGroup('web', \App\Http\Middleware\SecurityHeaders::class);
+    })
+    ->withExceptions(function (Exceptions $exceptions) {
+        //
+    })->create();
+
+
+    3. current app/Providers/FortifyServiceProvider.php
+    <?php
+
+namespace App\Providers;
+
+use App\Actions\Fortify\CreateNewUser;
+use App\Actions\Fortify\ResetUserPassword;
+use App\Actions\Fortify\UpdateUserPassword;
+use App\Actions\Fortify\UpdateUserProfileInformation;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
+use Laravel\Fortify\Fortify;
+
+class FortifyServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        // Bind custom LoginResponse — kept here, close to Fortify context
+        $this->app->singleton(
+            \Laravel\Fortify\Contracts\LoginResponse::class,
+            \App\Http\Responses\LoginResponse::class
+        );
+    }
+
+    public function boot(): void
+    {
+        Fortify::createUsersUsing(CreateNewUser::class);
+        Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
+        Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
+        Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
+
+        // ---------------------------------------------------------------
+        // REMOVED: Fortify::redirectUserForTwoFactorAuthenticationUsing()
+        // This is already the Fortify default. Re-registering it causes a
+        // container resolution failure during artisan CLI boot (the error
+        // you saw at bootstrap/app.php line 18).
+        // ---------------------------------------------------------------
+
+        // Login rate limiter — throttle by email + IP (OWASP compliant)
+        RateLimiter::for('login', function (Request $request) {
+            $throttleKey = Str::transliterate(
+                Str::lower($request->input(Fortify::username())) . '|' . $request->ip()
+            );
+            return Limit::perMinute(5)->by($throttleKey);
+        });
+
+        // 2FA rate limiter
+        RateLimiter::for('two-factor', function (Request $request) {
+            return Limit::perMinute(5)->by($request->session()->get('login.id'));
+        });
+
+        // ---------------------------------------------------------------
+        // REMOVED: passkeys rate limiter
+        // $request->session() throws during artisan CLI boot when no
+        // HTTP session is active. Only add this back if you implement
+        // passkeys (WebAuthn) and guard it with a session-exists check.
+        // ---------------------------------------------------------------
+
+        // Views — all pass required data explicitly
+        Fortify::loginView(fn () => view('auth.login'));
+
+        Fortify::registerView(fn () => view('auth.register'));
+
+        Fortify::verifyEmailView(fn () => view('auth.verify-email'));
+
+        Fortify::requestPasswordResetLinkView(fn () => view('auth.forgot-password'));
+
+        // FIX: pass $token and $email explicitly so the blade can use them
+        // directly without depending on $request being available in the view.
+        Fortify::resetPasswordView(function (Request $request) {
+            return view('auth.reset-password', [
+                'token' => $request->route('token'),
+                'email' => $request->email,
+            ]);
+        });
+
+        Fortify::confirmPasswordView(fn () => view('auth.confirm-password'));
+
+        Fortify::twoFactorChallengeView(fn () => view('auth.two-factor-challenge'));
+    }
+}
+
+4. php artisan --version
+ could not run because of the terminal error. I am using PHP version 8.2.28
+
+5. composer show laravel/fortify | grep versions
+versions : * v1.37.0

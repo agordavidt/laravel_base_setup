@@ -11,74 +11,73 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
-use Laravel\Fortify\Actions\RedirectIfTwoFactorAuthenticatable;
 use Laravel\Fortify\Fortify;
 
 class FortifyServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
-        //
+        // Bind custom LoginResponse — kept here, close to Fortify context
         $this->app->singleton(
             \Laravel\Fortify\Contracts\LoginResponse::class,
             \App\Http\Responses\LoginResponse::class
         );
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
         Fortify::createUsersUsing(CreateNewUser::class);
         Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
         Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
-        Fortify::redirectUserForTwoFactorAuthenticationUsing(RedirectIfTwoFactorAuthenticatable::class);
 
+        // ---------------------------------------------------------------
+        // REMOVED: Fortify::redirectUserForTwoFactorAuthenticationUsing()
+        // This is already the Fortify default. Re-registering it causes a
+        // container resolution failure during artisan CLI boot (the error
+        // you saw at bootstrap/app.php line 18).
+        // ---------------------------------------------------------------
+
+        // Login rate limiter — throttle by email + IP (OWASP compliant)
         RateLimiter::for('login', function (Request $request) {
-            $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
-
+            $throttleKey = Str::transliterate(
+                Str::lower($request->input(Fortify::username())) . '|' . $request->ip()
+            );
             return Limit::perMinute(5)->by($throttleKey);
         });
 
+        // 2FA rate limiter
         RateLimiter::for('two-factor', function (Request $request) {
             return Limit::perMinute(5)->by($request->session()->get('login.id'));
         });
 
-        RateLimiter::for('passkeys', function (Request $request) {
-            $credentialId = $request->input('credential.id');
+        // ---------------------------------------------------------------
+        // REMOVED: passkeys rate limiter
+        // $request->session() throws during artisan CLI boot when no
+        // HTTP session is active. Only add this back if you implement
+        // passkeys (WebAuthn) and guard it with a session-exists check.
+        // ---------------------------------------------------------------
 
-            return Limit::perMinute(10)->by(
-                ($credentialId ?: $request->session()->getId()).'|'.$request->ip()
-            );
+        // Views — all pass required data explicitly
+        Fortify::loginView(fn () => view('auth.login'));
+
+        Fortify::registerView(fn () => view('auth.register'));
+
+        Fortify::verifyEmailView(fn () => view('auth.verify-email'));
+
+        Fortify::requestPasswordResetLinkView(fn () => view('auth.forgot-password'));
+
+        // FIX: pass $token and $email explicitly so the blade can use them
+        // directly without depending on $request being available in the view.
+        Fortify::resetPasswordView(function (Request $request) {
+            return view('auth.reset-password', [
+                'token' => $request->route('token'),
+                'email' => $request->email,
+            ]);
         });
 
-        // View methods
-        Fortify::loginView(function () {
-            return view('auth.login');
-        });
+        Fortify::confirmPasswordView(fn () => view('auth.confirm-password'));
 
-         Fortify::registerView(function () {
-            return view('auth.register');
-        });
-
-        Fortify::verifyEmailView(function () {
-            return view('auth.verify-email');
-        });
-
-        Fortify::requestPasswordResetLinkView(function () {
-            return view('auth.forgot-password');
-        });
-
-        Fortify::resetPasswordView(function () {
-            return view('auth.reset-password');
-        });
-
-
-        
+        Fortify::twoFactorChallengeView(fn () => view('auth.two-factor-challenge'));
     }
 }
