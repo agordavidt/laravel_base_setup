@@ -9,9 +9,10 @@ use App\Http\Controllers\DashboardController;
 // ── Public ─────────────────────────────────────────────────────────────────
 Route::get('/', fn () => view('welcome'))->name('home');
 
+
+
 // ── Super-Admin ─────────────────────────────────────────────────────────────
-// FIX: added 'verified' — unverified users must not access admin areas
-Route::middleware(['auth', 'verified', 'role:super-admin', \App\Http\Middleware\PreventBackHistory::class])
+Route::middleware(['auth', 'role:super-admin', \App\Http\Middleware\PreventBackHistory::class])
     ->prefix('super-admin')
     ->name('super-admin.')
     ->group(function () {
@@ -19,14 +20,18 @@ Route::middleware(['auth', 'verified', 'role:super-admin', \App\Http\Middleware\
             ->name('dashboard');
     });
 
+
+
 // ── Admin ───────────────────────────────────────────────────────────────────
-Route::middleware(['auth', 'verified', 'role:admin', \App\Http\Middleware\PreventBackHistory::class])
+Route::middleware(['auth', 'role:admin', \App\Http\Middleware\PreventBackHistory::class])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])
             ->name('dashboard');
     });
+
+
 
 // ── Agent ───────────────────────────────────────────────────────────────────
 Route::middleware(['auth', 'verified', 'role:agent', \App\Http\Middleware\PreventBackHistory::class])
@@ -36,6 +41,8 @@ Route::middleware(['auth', 'verified', 'role:agent', \App\Http\Middleware\Preven
         Route::get('/dashboard', [AgentDashboardController::class, 'index'])
             ->name('dashboard');
     });
+
+
 
 // ── Default User ─────────────────────────────────────────────────────────────
 Route::middleware(['auth', 'verified', \App\Http\Middleware\PreventBackHistory::class])

@@ -37,7 +37,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 [
                     'name'     => $seed['name'],
                     'password' => Hash::make(
-                        env('SEED_PASSWORD', 'Password123!')
+                        env('SEED_PASSWORD', 'password')
                     ),
                 ]
             );
