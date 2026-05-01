@@ -1,142 +1,154 @@
-1. Error Messae
+A09:2025 Security Logging & Alerting Failuresicon
+Background.
+Security Logging & Alerting Failures retains its position at #9. This category has a slight name change to emphasize the alerting function needed to induce action on relevant logging events. This category will always be underrepresented in the data, and for the third time voted into a position in the list from the community survey participants. This category is incredibly difficult to test for, and has minimal representation in the CVE/CVSS data (only 723 CVEs); but can be very impactful for visibility and incident alerting and forensics. This category includes issues with properly handling output encoding to log files (CWE-117), inserting sensitive data into log files (CWE-532), and insufficient logging (CWE-778).
 
-Fatal error: Uncaught Error: Call to undefined method Illuminate\Foundation\Configuration\Middleware::redirectAuthenticatedTo() in C:\laragon\www\react-app\bootstrap\app.php:18
-Stack trace:
-#0 C:\laragon\www\react-app\vendor\laravel\framework\src\Illuminate\Foundation\Configuration\ApplicationBuilder.php(308): {closure}(Object(Illuminate\Foundation\Configuration\Middleware))
-#1 C:\laragon\www\react-app\vendor\laravel\framework\src\Illuminate\Container\Container.php(1618): Illuminate\Foundation\Configuration\ApplicationBuilder->Illuminate\Foundation\Configuration\{closure}(Object(Illuminate\Foundation\Console\Kernel), Object(Illuminate\Foundation\Application))
-#2 C:\laragon\www\react-app\vendor\laravel\framework\src\Illuminate\Container\Container.php(1556): Illuminate\Container\Container->fireCallbackArray(Object(Illuminate\Foundation\Console\Kernel), Array)
-#3 C:\laragon\www\react-app\vendor\laravel\framework\src\Illuminate\Container\Container.php(1542): Illuminate\Container\Container->fireAfterResolvingCallbacks('Illuminate\\Cont...', Object(Illuminate\Foundation\Console\Kernel))
-#4 C:\laragon\www\react-app\vendor\laravel\framework\src\Illuminate\Container\Container.php(951): Illuminate\Container\Container->fireResolvingCallbacks('Illuminate\\Cont...', Object(Illuminate\Foundation\Console\Kernel))
-#5 C:\laragon\www\react-app\vendor\laravel\framework\src\Illuminate\Foundation\Application.php(1078): Illuminate\Container\Container->resolve('Illuminate\\Cont...', Array, true)
-#6 C:\laragon\www\react-app\vendor\laravel\framework\src\Illuminate\Container\Container.php(864): Illuminate\Foundation\Application->resolve('Illuminate\\Cont...', Array)
-#7 C:\laragon\www\react-app\vendor\laravel\framework\src\Illuminate\Foundation\Application.php(1058): Illuminate\Container\Container->make('Illuminate\\Cont...', Array)
-#8 C:\laragon\www\react-app\vendor\laravel\framework\src\Illuminate\Foundation\Application.php(1233): Illuminate\Foundation\Application->make('Illuminate\\Cont...')
-#9 C:\laragon\www\react-app\artisan(16): Illuminate\Foundation\Application->handleCommand(Object(Symfony\Component\Console\Input\ArgvInput))
-#10 {main}
-  thrown in C:\laragon\www\react-app\bootstrap\app.php on line 18
+Score table.
+CWEs Mapped	Max Incidence Rate	Avg Incidence Rate	Max Coverage	Avg Coverage	Avg Weighted Exploit	Avg Weighted Impact	Total Occurrences	Total CVEs
+5	11.33%	3.91%	85.96%	46.48%	7.19	2.65	260,288	723
+Description.
+Without logging and monitoring, attacks and breaches cannot be detected, and without alerting it is very difficult to respond quickly and effectively during a security incident. Insufficient logging, continuous monitoring, detection, and alerting to initiate active responses occurs any time:
 
-  2. current bootstrap/app.php
-  <?php
+Auditable events, such as logins, failed logins, and high-value transactions, are not logged or logged inconsistently (for instance, only logging successful logins, but not failed attempts).
+Warnings and errors generate no, inadequate, or unclear log messages.
+The integrity of logs is not properly protected from tampering.
+Logs of applications and APIs are not monitored for suspicious activity.
+Logs are only stored locally, and not properly backedup.
+Appropriate alerting thresholds and response escalation processes are not in place or effective. Alerts are not received or reviewed within a reasonable amount of time.
+Penetration testing and scans by dynamic application security testing (DAST) tools (such as Burp or ZAP) do not trigger alerts.
+The application cannot detect, escalate, or alert for active attacks in real-time or near real-time.
+You are vulnerable to sensitive information leakage by making logging and alerting events visible to a user or an attacker (see A01:2025-Broken Access Control), or by logging sensitive information that should not be logged (such as PII or PHI).
+You are vulnerable to injections or attacks on the logging or monitoring systems if log data is not correctly encoded.
+The application is missing or mishandling errors and other exceptional conditions, such that the system is unaware there was an error, and is therefore unable to log there was a problem.
+Adequate ‘use cases’ for issuing alerts are missing or outdated to recognize a special situation.
+Too many false positive alerts make it impossible to distinguish important alerts from unimportant ones, resulting in them being recognized too late or not at all (physical overload of the SOC team).
+Detected alerts cannot be processed correctly because the playbook for the use case is incomplete, out of date, or missing.
+How to prevent.
+Developers should implement some or all the following controls, depending on the risk of the application:
 
-use Illuminate\Foundation\Application;
-use Illuminate\Foundation\Configuration\Exceptions;
-use Illuminate\Foundation\Configuration\Middleware;
+Ensure all login, access control, and server-side input validation failures can be logged with sufficient user context to identify suspicious or malicious accounts and held for enough time to allow delayed forensic analysis.
+Ensure that every part of your app that contains a security control is logged, whether it succeeds or fails.
+Ensure that logs are generated in a format that log management solutions can easily consume.
+Ensure log data is encoded correctly to prevent injections or attacks on the logging or monitoring systems.
+Ensure all transactions have an audit trail with integrity controls to prevent tampering or deletion, such as append-only database tables or similar.
+Ensure all transactions that throw an error are rolled back and started over. Always fail closed.
+If your application or its users behave suspiciously, issue an alert. Create guidance for your developers on this topic so they can code against this or buy a system for this.
+DevSecOps and security teams should establish effective monitoring and alerting use cases including playbooks such that suspicious activities are detected and responded to quickly by the Security Operations Center (SOC) team.
+Add ‘honeytokens’ as traps for attackers into your application e.g. into the database, data, as real and/or technical user identity. As they are not used in normal business, any access generates logging data that can be alerted with nearly no false positives.
+Behavior analysis and AI support could be optionally an additional technique to support low rates of false positives for alerts.
+Establish or adopt an incident response and recovery plan, such as National Institute of Standards and Technology (NIST) 800-61r2 or later. Teach your software developers what application attacks and incidents look like, so they can report them.
+There are commercial and open-source application protection products such as the OWASP ModSecurity Core Rule Set, and open-source log correlation software, such as the Elasticsearch, Logstash, Kibana (ELK) stack, that feature custom dashboards and alerting that may help you combat these issues. There are also commercial observability tools that can help you respond to or block attacks in close to real-time.
 
-return Application::configure(basePath: dirname(__DIR__))
-    ->withRouting(
-        web: __DIR__ . '/../routes/web.php',
-        commands: __DIR__ . '/../routes/console.php',
-        health: '/up',
-    )
-    ->withMiddleware(function (Middleware $middleware) {
+Example attack scenarios.
+Scenario #1: A children's health plan provider's website operator couldn't detect a breach due to a lack of monitoring and logging. An external party informed the health plan provider that an attacker had accessed and modified thousands of sensitive health records of more than 3.5 million children. A post-incident review found that the website developers had not addressed significant vulnerabilities. As there was no logging or monitoring of the system, the data breach could have been in progress since 2013, a period of more than seven years.
 
-        // Simple fallback — the real role-aware redirect is handled inside
-        // app/Http/Middleware/RedirectIfAuthenticated.php which Laravel
-        // auto-discovers and uses instead of its own default.
-        $middleware->redirectAuthenticatedTo('/dashboard');
+Scenario #2: A major Indian airline had a data breach involving more than ten years' worth of personal data of millions of passengers, including passport and credit card data. The data breach occurred at a third-party cloud hosting provider, who notified the airline of the breach after some time.
 
-        // Spatie permission middleware aliases
-        $middleware->alias([
-            'role'               => \Spatie\Permission\Middleware\RoleMiddleware::class,
-            'permission'         => \Spatie\Permission\Middleware\PermissionMiddleware::class,
-            'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
-        ]);
+Scenario #3: A major European airline suffered a GDPR reportable breach. The breach was reportedly caused by payment application security vulnerabilities exploited by attackers, who harvested more than 400,000 customer payment records. The airline was fined 20 million pounds as a result by the privacy regulator.
 
-        // Append security headers to every web response
-        $middleware->appendToGroup('web', \App\Http\Middleware\SecurityHeaders::class);
-    })
-    ->withExceptions(function (Exceptions $exceptions) {
-        //
-    })->create();
+References.
+OWASP Proactive Controls: C9: Implement Logging and Monitoring
+
+OWASP Application Security Verification Standard: V16 Security Logging and Error Handling
+
+OWASP Cheat Sheet: Application Logging Vocabulary
+
+OWASP Cheat Sheet: Logging
+
+Data Integrity: Recovering from Ransomware and Other Destructive Events
+
+Data Integrity: Identifying and Protecting Assets Against Ransomware and Other Destructive Events
+
+Data Integrity: Detecting and Responding to Ransomware and Other Destructive Events
+
+Real world example of such failures in Snowflake Breach
 
 
-    3. current app/Providers/FortifyServiceProvider.php
-    <?php
 
-namespace App\Providers;
+===================================================
+A10:2025 Mishandling of Exceptional Conditionsicon
+Background.
+Mishandling of Exceptional Conditions is a new category for 2025. This category contains 24 CWEs and focuses on improper error handling, logical errors, failing open, and other related scenarios stemming from abnormal conditions and systems may encounter. This category has some CWEs that were previously associated with poor code quality. That was too general for us; in our opinion, this more specific category provides better guidance.
 
-use App\Actions\Fortify\CreateNewUser;
-use App\Actions\Fortify\ResetUserPassword;
-use App\Actions\Fortify\UpdateUserPassword;
-use App\Actions\Fortify\UpdateUserProfileInformation;
-use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Str;
-use Laravel\Fortify\Fortify;
+Notable CWEs included in this category: CWE-209 Generation of Error Message Containing Sensitive Information, CWE-234 Failure to Handle Missing Parameter, CWE-274 Improper Handling of Insufficient Privileges, CWE-476 NULL Pointer Dereference, and CWE-636 Not Failing Securely ('Failing Open').
 
-class FortifyServiceProvider extends ServiceProvider
-{
-    public function register(): void
-    {
-        // Bind custom LoginResponse — kept here, close to Fortify context
-        $this->app->singleton(
-            \Laravel\Fortify\Contracts\LoginResponse::class,
-            \App\Http\Responses\LoginResponse::class
-        );
-    }
+Score table.
+CWEs Mapped	Max Incidence Rate	Avg Incidence Rate	Max Coverage	Avg Coverage	Avg Weighted Exploit	Avg Weighted Impact	Total Occurrences	Total CVEs
+24	20.67%	2.95%	100.00%	37.95%	7.11	3.81	769,581	3,416
+Description.
+Mishandling exceptional conditions in software happens when programs fail to prevent, detect, and respond to unusual and unpredictable situations, which leads to crashes, unexpected behavior, and sometimes vulnerabilities. This can involve one or more of the following 3 failings; the application doesn’t prevent an unusual situation from happening, it doesn’t identify the situation as it is happening, and/or it responds poorly or not at all to the situation afterwards.
 
-    public function boot(): void
-    {
-        Fortify::createUsersUsing(CreateNewUser::class);
-        Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
-        Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
-        Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
+Exceptional conditions can be caused by missing, poor, or incomplete input validation, or late, high level error handling instead at the functions where they occur, or unexpected environmental states such as memory, privilege, or network issues, inconsistent exception handling, or exceptions that are not handled at all, allowing the system to fall into an unknown and unpredictable state. Any time an application is unsure of its next instruction, an exceptional condition has been mishandled. Hard-to-find errors and exceptions can threaten the security of the whole application for a long time.
 
-        // ---------------------------------------------------------------
-        // REMOVED: Fortify::redirectUserForTwoFactorAuthenticationUsing()
-        // This is already the Fortify default. Re-registering it causes a
-        // container resolution failure during artisan CLI boot (the error
-        // you saw at bootstrap/app.php line 18).
-        // ---------------------------------------------------------------
+Many different security vulnerabilities can happen when we mishandle exceptional conditions,
 
-        // Login rate limiter — throttle by email + IP (OWASP compliant)
-        RateLimiter::for('login', function (Request $request) {
-            $throttleKey = Str::transliterate(
-                Str::lower($request->input(Fortify::username())) . '|' . $request->ip()
-            );
-            return Limit::perMinute(5)->by($throttleKey);
-        });
+such as logic bugs, overflows, race conditions, fraudulent transactions, or issues with memory, state, resource, timing, authentication, and authorization. These types of vulnerabilities can negatively affect the confidentiality, availability, and/or integrity of a system or it’s data. Attackers manipulate an application's flawed error handling to strike this vulnerability.
 
-        // 2FA rate limiter
-        RateLimiter::for('two-factor', function (Request $request) {
-            return Limit::perMinute(5)->by($request->session()->get('login.id'));
-        });
+How to prevent.
+In order to handle an exceptional condition properly we must plan for such situations (expect the worst). We must ‘catch’ every possible system error directly at the place where they occur and then handle it (which means do something meaningful to solve the problem and ensure we recover from the issue). As part of the handling, we should include throwing an error (to inform the user in an understandable way), logging of the event, as well as issuing an alert if we feel that is justified. We should also have a global exception handler in place in case there is ever something we have missed. Ideally, we would also have monitoring and/or observability tooling or functionality that watches for repeated errors or patterns that indicate an on-going attack, that could issue a response, defense, or blocking of some kind. This can help us block and respond to scripts and bots that focus on our error handling weaknesses.
 
-        // ---------------------------------------------------------------
-        // REMOVED: passkeys rate limiter
-        // $request->session() throws during artisan CLI boot when no
-        // HTTP session is active. Only add this back if you implement
-        // passkeys (WebAuthn) and guard it with a session-exists check.
-        // ---------------------------------------------------------------
+Catching and handling exceptional conditions ensures that the underlying infrastructure of our programs are not left to deal with unpredictable situations. If you are part way through a transaction of any kind, it is extremely important that you roll back every part of the transaction and start again (also known as failing closed). Attempting to recover a transaction part way through is often where we create unrecoverable mistakes.
 
-        // Views — all pass required data explicitly
-        Fortify::loginView(fn () => view('auth.login'));
+Whenever possible, add rate limiting, resource quotas, throttling, and other limits wherever possible, to prevent exceptional conditions in the first place. Nothing in information technology should be limitless, as this leads to a lack of application resilience, denial of service, successful brute force attacks, and extraordinary cloud bills. \ Consider whether identical repeated errors, above a certain rate, should only be outputted as statistics showing how often they have occurred and in what time frame. This information should be appended to the original message so as not to interfere with automated logging and monitoring, see A09:2025 Security Logging & Alerting Failures.
 
-        Fortify::registerView(fn () => view('auth.register'));
+On top of this, we would want to include strict input validation (with sanitization or escaping for potentially hazardous characters that we must accept), and centralized error handling, logging, monitoring, and alerting, and a global exception handler. One application should not multiple functions for handling exceptional conditions, it should be performed in one place, the same way each time. We should also create project security requirements for all the advice in this section, perform threat modelling and/or secure design review activities in the design phase of our projects, perform code review or static analysis, as well as execute stress, performance, and penetration testing of the final system.
 
-        Fortify::verifyEmailView(fn () => view('auth.verify-email'));
+If possible, your entire organization should handle exceptional conditions in the same way, as it makes it easier to review and audit code for errors in this important security control.
 
-        Fortify::requestPasswordResetLinkView(fn () => view('auth.forgot-password'));
+Example attack scenarios.
+Scenario #1: Resource exhaustion via mishandling of exceptional conditions (Denial of Service) could be caused if the application catches exceptions when files are uploaded, but doesn’t properly release resources after. Each new exception leaves resources locked or otherwise unavailable, until all resources are used up.
 
-        // FIX: pass $token and $email explicitly so the blade can use them
-        // directly without depending on $request being available in the view.
-        Fortify::resetPasswordView(function (Request $request) {
-            return view('auth.reset-password', [
-                'token' => $request->route('token'),
-                'email' => $request->email,
-            ]);
-        });
+Scenario #2: Sensitive data exposure via improper handling or database errors that reveals the full system error to the user. The attacker continues to force errors in order to use the sensitive system information to create a better SQL injection attack. The sensitive data in the user error messages are reconnaissance.
 
-        Fortify::confirmPasswordView(fn () => view('auth.confirm-password'));
+Scenario #3: State corruption in financial transactions could be caused by an attacker interrupting a multi-step transaction via network disruptions. Imagine the transaction order was: debit user account, credit destination account, log transaction. If the system doesn’t properly roll back the entire transaction (fail closed) when there is an error part way through, the attacker could potentially drain the user’s account, or possibly a race condition that allows the attacker to send money to the destination multiple times.
 
-        Fortify::twoFactorChallengeView(fn () => view('auth.two-factor-challenge'));
-    }
-}
+============================
+A01:2025 Broken Access Controlicon
+Background.
+Maintaining its position at #1 in the Top Ten, 100% of the applications tested were found to have some form of broken access control. Notable CWEs included are CWE-200: Exposure of Sensitive Information to an Unauthorized Actor, CWE-201: Exposure of Sensitive Information Through Sent Data, CWE-918 Server-Side Request Forgery (SSRF), and CWE-352: Cross-Site Request Forgery (CSRF). This category has the highest number of occurrences in the contributed data, and second highest number of related CVEs.
 
-4. php artisan --version
- could not run because of the terminal error. I am using PHP version 8.2.28
+Score table.
+CWEs Mapped	Max Incidence Rate	Avg Incidence Rate	Max Coverage	Avg Coverage	Avg Weighted Exploit	Avg Weighted Impact	Total Occurrences	Total CVEs
+40	20.15%	3.74%	100.00%	42.93%	7.04	3.84	1,839,701	32,654
+Description.
+Access control enforces policy such that users cannot act outside of their intended permissions. Failures typically lead to unauthorized information disclosure, modification or destruction of all data, or performing a business function outside the user's limits. Common access control vulnerabilities include:
 
-5. composer show laravel/fortify | grep versions
-versions : * v1.37.0
+Violation of the principle of least privilege, commonly known as deny by default, where access should only be granted for particular capabilities, roles, or users, but is available to anyone.
+Bypassing access control checks by modifying the URL (parameter tampering or force browsing), internal application state, or the HTML page, or by using an attack tool that modifies API requests.
+Permitting viewing or editing someone else's account by providing its unique identifier (insecure direct object references)
+An accessible API with missing access controls for POST, PUT, and DELETE.
+Elevation of privilege. Acting as a user without being logged in or or gaining privileges beyond those expected of the logged in user (e.g. admin access).
+Metadata manipulation, such as replaying or tampering with a JSON Web Token (JWT) access control token, a cookie or hidden field manipulated to elevate privileges, or abusing JWT invalidation.
+CORS misconfiguration allows API access from unauthorized or untrusted origins.
+Force browsing (guessing URLs) to authenticated pages as an unauthenticated user or to privileged pages as a standard user.
+How to prevent.
+Access control is only effective when implemented in trusted server-side code or serverless APIs, where the attacker cannot modify the access control check or metadata.
+
+Except for public resources, deny by default.
+Implement access control mechanisms once and reuse them throughout the application, including minimizing Cross-Origin Resource Sharing (CORS) usage.
+Model access controls should enforce record ownership rather than allowing users to create, read, update, or delete any record.
+Unique application business limit requirements should be enforced by domain models.
+Disable web server directory listing and ensure file metadata (e.g., .git) and backup files are not present within web roots.
+Log access control failures, alert admins when appropriate (e.g., repeated failures).
+Implement rate limits on API and controller access to minimize the harm from automated attack tooling.
+Stateful session identifiers should be invalidated on the server after logout. Stateless JWT tokens should be short-lived to minimize the window of opportunity for an attacker. For longer-lived JWTs, consider using refresh tokens and following OAuth standards to revoke access.
+Use well-established toolkits or patterns that provide simple, declarative access controls.
+Developers and QA staff should include functional access control in their unit and integration tests.
+
+Example attack scenarios.
+Scenario #1: The application uses unverified data in an SQL call that is accessing account information:
+
+pstmt.setString(1, request.getParameter("acct"));
+ResultSet results = pstmt.executeQuery( );
+An attacker can simply modify the browser's 'acct' parameter to send any desired account number. If not correctly verified, the attacker can access any user's account.
+
+https://example.com/app/accountInfo?acct=notmyacct
+Scenario #2: An attacker simply forces browsers to target URLs. Admin rights are required for access to the admin page.
+
+https://example.com/app/getappInfo
+https://example.com/app/admin_getappInfo
+If an unauthenticated user can access either page, it's a flaw. If a non-admin can access the admin page, this is a flaw.
+
+Scenario #3: An application puts all of their access control in their front-end. While the attacker cannot get to https://example.com/app/admin_getappInfo due to JavaScript code running in the browser, they can simply execute:
+
+$ curl https://example.com/app/admin_getappInfo
+from the command line.

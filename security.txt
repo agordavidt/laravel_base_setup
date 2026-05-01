@@ -1,0 +1,66 @@
+The Basics
+
+APP_DEBUG=false in production, app key generated, secure file permissions (775 dirs / 664 files), no vulnerable dependencies.
+
+Cookie & Session Security
+
+EncryptCookies middleware enabled, http_only: true, domain: null, same_site: lax, secure: null (auto), session lifetime: 15 minutes.
+
+Authentication
+
+Use Fortify's built-in auth (login, register, password reset, email verification, 2FA) — no rolling custom auth.
+
+Mass Assignment
+
+Always use $request->only() or $request->validated() — never $request->all() for fills.
+No forceFill, forceCreate, unguarded models, or $guarded = [].
+
+SQL Injection
+
+Eloquent ORM by default for queries. Raw queries will always use ? bindings or named bindings.
+User input will never dictate column names without strict whitelist validation (Rule::in(...)).
+
+XSS
+
+Always {{ }} in Blade. {!! !!} only for trusted, pre-sanitized content — never on user input.
+
+File Uploads
+
+Validate type (mimes:), size (size:), and strip directory info with basename() on any user-supplied filenames.
+
+Path Traversal
+
+basename() on all user-supplied file path inputs before reading or writing.
+
+Open Redirection
+
+No redirect($request->input(...)). Redirects only to whitelisted/internal routes.
+
+CSRF
+
+VerifyCsrfToken middleware kept active on all web routes. @csrf on every POST form. Only stateless API/webhook routes excluded.
+
+Command Injection
+
+escapeshellcmd() / escapeshellarg() on any shell-bound input. Preference is to avoid exec() altogether.
+
+Other Injections
+
+No unserialize(), eval(), or extract() on user input — ever.
+
+Rate Limiting
+
+throttle middleware applied per route group. Custom RateLimiter::for() where finer control is needed. Global limits set in Kernel.php.
+
+Security Headers
+
+X-Frame-Options, X-Content-Type-Options, Strict-Transport-Security, Content-Security-Policy added via middleware.
+
+
+
+
+
+
+
+
+
