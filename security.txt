@@ -57,6 +57,54 @@ Security Headers
 X-Frame-Options, X-Content-Type-Options, Strict-Transport-Security, Content-Security-Policy added via middleware.
 
 
+Proposed Implementation Plan
+1. Dedicated Security Log Channel
+A separate security log channel in config/logging.php writing structured JSON to its own file, separate from Laravel's default application log. This satisfies the "format log management solutions can easily consume" requirement and keeps security events isolated and auditable.
+2. SecurityLogger Service
+A single, reusable service class App\Services\SecurityLogger that is the one place all security events flow through. Every call produces a structured, consistently formatted log entry with:
+
+Event type (login_success, login_failure, access_denied, etc.)
+User context (ID, email, role — never password)
+IP address
+User agent
+Timestamp
+Request path
+
+This directly satisfies A10's "one consistent approach, one place" requirement and A09's "sufficient user context" requirement.
+3. Laravel Event Listeners
+Fortify already fires events. We listen to them:
+
+Login → log success
+Failed (Laravel auth) → log failure, increment failure counter
+Lockout → log + alert
+PasswordReset → log
+Registered → log
+Logout → log
+
+No manual logging calls scattered across controllers — the event system handles it centrally.
+4. Suspicious Activity Detector
+A service that watches for patterns and triggers alerts:
+
+N failed logins from same IP within X minutes → alert
+Access control violation (403) → log + alert if repeated
+Any 500 error → log with full context
+
+Uses Laravel's Cache (with the database or Redis driver) as a counter store — no extra dependencies.
+5. Alert Notification
+A SecurityAlertNotification that sends to a configurable admin email/Slack channel when thresholds are breached. Uses Laravel's built-in notification system.
+6. Database Audit Log Table
+An append-only security_logs table for high-value events that must survive log file rotation. This satisfies "audit trail with integrity controls." The table will have no updated_at and no soft deletes — insert only.
+7. Global Exception Handler (A10)
+Harden bootstrap/app.php's exception handler to:
+
+Never expose stack traces or system messages to users in production
+Log every unhandled exception through SecurityLogger
+Return safe, generic error responses
+
+8. Log Injection Prevention (CWE-117)
+SecurityLogger will sanitise all input before writing to logs — stripping newlines and control characters that could be used to forge log entries.
+
+
 
 
 
