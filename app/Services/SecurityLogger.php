@@ -227,32 +227,57 @@ class SecurityLogger
         }
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Updated: triggerAlert now also persists to the security_alerts table
+    | so the super admin can see, investigate, and acknowledge alerts from
+    | the security monitoring dashboard.
+    |--------------------------------------------------------------------------
+    */
     private function triggerAlert(string $alertType, array $data): void
     {
-        // Prevent alert flooding: one alert per IP per alert type per window
+        // Prevent alert flooding — one alert per IP per type per time window
         $dedupeKey = "security:alert_sent:{$alertType}:{$data['ip']}";
 
         if (Cache::has($dedupeKey)) {
             return;
         }
 
-        // Lock the deduplication key for the same window as the threshold
         Cache::put($dedupeKey, true, now()->addMinutes($data['minutes']));
 
-        // Log the alert itself as a high-value event
+        // 1. Log to file + security_logs DB as before
         $this->log('security.alert_triggered', array_merge($data, [
             'alert_type' => $alertType,
         ]), 'warning');
 
-        // Send the email notification
+        // 2. Persist to security_alerts table for dashboard visibility
+        try {
+            \App\Models\SecurityAlert::create([
+                'alert_type'     => $alertType,
+                'ip_address'     => $data['ip'],
+                'event_count'    => $data['count'],
+                'window_minutes' => $data['minutes'],
+                'context'        => $this->sanitiseContext(
+                    array_diff_key($data, array_flip(['ip', 'count', 'minutes']))
+                ),
+                'triggered_at'   => now(),
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('SecurityLogger: failed to persist alert', [
+                'alert_type' => $alertType,
+                'error'      => $e->getMessage(),
+            ]);
+        }
+
+        // 3. Send email notification
         $alertEmail = config('security.alert_email');
 
         if ($alertEmail) {
             try {
-                Notification::route('mail', $alertEmail)
-                    ->notify(new SecurityAlertNotification($alertType, $data));
-            } catch (Throwable $e) {
-                Log::error('SecurityLogger: failed to send alert notification', [
+                \Illuminate\Support\Facades\Notification::route('mail', $alertEmail)
+                    ->notify(new \App\Notifications\SecurityAlertNotification($alertType, $data));
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('SecurityLogger: failed to send alert notification', [
                     'alert_type' => $alertType,
                     'error'      => $e->getMessage(),
                 ]);
