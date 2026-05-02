@@ -126,6 +126,13 @@ return [
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
         ],
+        'security' => [
+            'driver'    => 'daily',
+            'path'      => storage_path('logs/security/security.log'),
+            'level'     => 'debug',
+            'days'      => 90,       // auto-rotate, keep 90 days of file logs
+            'formatter' => Monolog\Formatter\JsonFormatter::class, // machine-readable
+        ],
 
     ],
 
