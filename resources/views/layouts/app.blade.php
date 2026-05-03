@@ -1,93 +1,160 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ config('app.name', 'Frontrow') }} – @yield('title', 'Dashboard')</title>
+    <title>Frontrow – @yield('title', 'Dashboard')</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        navy: { DEFAULT: '#0b0f1a', 800: '#111827', 700: '#1a2235' },
-                        gold: { DEFAULT: '#c9a84c', light: '#e4c870', dark: '#a0832e' },
-                    },
-                    fontFamily: {
-                        display: ['"Playfair Display"', 'serif'],
-                        body:    ['"DM Sans"', 'sans-serif'],
-                    },
-                }
-            }
-        }
-    </script>
-
-    <style>
-        body { font-family: 'DM Sans', sans-serif; background-color: #0b0f1a; }
-        .sidebar-link { display:flex; align-items:center; gap:.75rem; padding:.6rem 1rem; border-radius:.5rem; color:rgba(255,255,255,.45); font-size:.9rem; transition: background .15s, color .15s; }
-        .sidebar-link:hover, .sidebar-link.active { background: rgba(201,168,76,.08); color: #c9a84c; }
-        .btn-gold { background: linear-gradient(135deg,#c9a84c,#a0832e); transition: opacity .2s; }
-        .btn-gold:hover { opacity:.9; }
-        @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-        .fade-up { animation: fadeUp .45s cubic-bezier(.22,1,.36,1) both; }
-    </style>
+    {{-- Bootstrap 5 --}}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    {{-- Font Awesome 6 --}}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    {{-- Google Fonts --}}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    {{-- App styles --}}
+    <link rel="stylesheet" href="{{ asset('backend/assets/css/app.css') }}">
 </head>
-<body class="min-h-screen flex" style="background:#0b0f1a;">
+<body>
 
-    {{-- Sidebar --}}
-    <aside class="w-64 shrink-0 border-r border-white/5 flex flex-col px-4 py-6 gap-1">
-        <a href="/" class="font-display text-gold text-lg tracking-widest uppercase mb-8 px-3 block">Frontrow</a>
+<div class="fr-overlay" id="frOverlay"></div>
 
-        <a href="/dashboard" class="sidebar-link active">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-            Dashboard
-        </a>
-        <a href="#" class="sidebar-link">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-            Profile
-        </a>
-        <a href="#" class="sidebar-link">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm0 0v10l4 2"/></svg>
-            Activity
-        </a>
-        <a href="#" class="sidebar-link">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-            Settings
+<div class="fr-wrapper">
+
+    {{-- ═══ SIDEBAR ═══ --}}
+    <aside class="fr-sidebar" id="frSidebar">
+
+        <a href="/" class="sidebar-logo">
+            <div class="logo-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+            </div>
+            <span class="logo-text">Frontrow</span>
         </a>
 
-        <div class="mt-auto pt-6 border-t border-white/5">
-            <form method="POST" action="/logout">
+        <nav class="sidebar-nav">
+            @include('partials.sidebar.' . (auth()->user()->getRoleNames()->first() ?? 'user'))
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <div class="user-avatar-initials">
+                    {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 2)) }}
+                </div>
+                <div class="user-meta">
+                    <div class="u-name">{{ auth()->user()->name ?? 'User' }}</div>
+                    <div class="u-role">
+                        {{ str_replace('-', ' ', auth()->user()->getRoleNames()->first() ?? 'user') }}
+                    </div>
+                </div>
+            </div>
+            <form method="POST" action="{{ route('logout') }}">
                 @csrf
-                <button type="submit" class="sidebar-link w-full text-left text-red-400/60 hover:text-red-400 hover:bg-red-500/5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-                    Log Out
+                <button type="submit" class="sidebar-logout" data-label="Logout">
+                    <i class="fas fa-arrow-right-from-bracket"></i>
+                    <span>Log Out</span>
                 </button>
             </form>
         </div>
+
     </aside>
 
-    {{-- Main area --}}
-    <div class="flex-1 flex flex-col">
+    {{-- ═══ BODY ═══ --}}
+    <div class="fr-body">
+
         {{-- Topbar --}}
-        <header class="h-16 border-b border-white/5 px-8 flex items-center justify-between">
-            <h1 class="text-white/70 text-sm font-medium tracking-wide uppercase">@yield('title', 'Dashboard')</h1>
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-gold/20 flex items-center justify-center text-gold text-sm font-semibold">
-                    {{ auth()->user()->name[0] ?? 'U' }}
+        <header class="fr-topbar">
+            <button class="topbar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <span class="topbar-title">@yield('title', 'Dashboard')</span>
+
+            <div class="topbar-search">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Search…" id="globalSearch">
+            </div>
+
+            <div class="topbar-actions ms-auto">
+                <a href="#" class="topbar-btn" title="Notifications">
+                    <i class="fas fa-bell"></i>
+                    <span class="notif-dot"></span>
+                </a>
+                <a href="" class="topbar-btn" title="Settings">
+                    <i class="fas fa-gear"></i>
+                </a>
+                <div class="dropdown">
+                    <div class="topbar-user" data-bs-toggle="dropdown" aria-expanded="false">
+                        <div class="topbar-user-avatar">
+                            {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 2)) }}
+                        </div>
+                        <div class="topbar-user-info">
+                            <div class="topbar-user-name">
+                                {{ Str::words(auth()->user()->name ?? 'User', 1, '') }}
+                            </div>
+                            <div class="topbar-user-role">
+                                {{ str_replace('-', ' ', auth()->user()->getRoleNames()->first() ?? 'user') }}
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-down ms-1" style="font-size:.65rem;color:var(--text-muted);"></i>
+                    </div>
+                    <ul class="dropdown-menu dropdown-menu-end" style="font-size:.85rem;min-width:180px;">
+                        <li>
+                            <a class="dropdown-item" href="">
+                                <i class="fas fa-user me-2 text-muted"></i>Profile
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit" class="dropdown-item text-danger">
+                                    <i class="fas fa-arrow-right-from-bracket me-2"></i>Log Out
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
                 </div>
-                <span class="text-white/50 text-sm">{{ auth()->user()->name ?? 'User' }}</span>
             </div>
         </header>
 
+        {{-- Flash messages --}}
+        @if (session('success') || session('error') || session('info'))
+        <div class="fr-main" style="padding-bottom:0;padding-top:.75rem;">
+            @if (session('success'))
+                <div class="flash flash-success mb-2">
+                    <i class="fas fa-circle-check"></i> {{ session('success') }}
+                </div>
+            @endif
+            @if (session('error'))
+                <div class="flash flash-error mb-2">
+                    <i class="fas fa-circle-xmark"></i> {{ session('error') }}
+                </div>
+            @endif
+            @if (session('info'))
+                <div class="flash flash-info mb-2">
+                    <i class="fas fa-circle-info"></i> {{ session('info') }}
+                </div>
+            @endif
+        </div>
+        @endif
+
         {{-- Page content --}}
-        <main class="flex-1 p-8 fade-up">
+        <main class="fr-main" style="padding-top:.75rem;">
             @yield('content')
         </main>
+
     </div>
+</div>
+
+{{-- Bootstrap JS --}}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+{{-- App JS --}}
+<script src="{{ asset('backend/assets/js/app.js') }}"></script>
+{{-- Chart.js (only loaded when a page needs it via data attribute) --}}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 </body>
 </html>

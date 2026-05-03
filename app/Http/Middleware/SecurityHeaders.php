@@ -6,9 +6,6 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-/**
- * Applies OWASP-recommended security headers to every response.
- */
 class SecurityHeaders
 {
     public function handle(Request $request, Closure $next): Response
@@ -18,18 +15,33 @@ class SecurityHeaders
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
-        $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+
+        $response->headers->set(
+            'Permissions-Policy',
+            'camera=(), microphone=(), geolocation=()'
+        );
+
         $response->headers->set(
             'Content-Security-Policy',
             "default-src 'self'; " .
-            "script-src 'self' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; " .
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " .
-            "font-src 'self' https://fonts.gstatic.com; " .
+
+            // Scripts (Bootstrap + inline script)
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " .
+
+            // Styles (Bootstrap + Google Fonts + inline styles)
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://cdnjs.cloudflare.com; " .
+
+            // Fonts (Google Fonts + Font Awesome)
+            "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; " .
+
+            // Images
             "img-src 'self' data: https:; " .
+
+            // AJAX / API calls
             "connect-src 'self';"
         );
 
-        // Only on HTTPS — set this to true via config when behind TLS
+        // HTTPS enforcement (production only)
         if (config('app.env') === 'production') {
             $response->headers->set(
                 'Strict-Transport-Security',
