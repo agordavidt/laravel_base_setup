@@ -38,8 +38,7 @@
 <div class="row g-3 mb-4">
 
     <div class="col-6 col-xl-3">
-        <div class="threat-card">
-            <div class="tc-accent" style="background:linear-gradient(90deg,#ef4444,#f87171);"></div>
+        <div class="threat-card">            
             <div class="tc-icon" style="background:rgba(239,68,68,.1);">
                 <i class="fas fa-right-to-bracket" style="color:#ef4444;"></i>
             </div>
@@ -58,8 +57,7 @@
     </div>
 
     <div class="col-6 col-xl-3">
-        <div class="threat-card">
-            <div class="tc-accent" style="background:linear-gradient(90deg,var(--primary),var(--primary-dk));"></div>
+        <div class="threat-card">            
             <div class="tc-icon" style="background:rgba(34,197,94,.1);">
                 <i class="fas fa-bell" style="color:var(--primary);"></i>
             </div>
@@ -76,8 +74,7 @@
     </div>
 
     <div class="col-6 col-xl-3">
-        <div class="threat-card">
-            <div class="tc-accent" style="background:linear-gradient(90deg,#f59e0b,#fbbf24);"></div>
+        <div class="threat-card">         
             <div class="tc-icon" style="background:rgba(245,158,11,.1);">
                 <i class="fas fa-ban" style="color:#f59e0b;"></i>
             </div>
@@ -96,8 +93,7 @@
     </div>
 
     <div class="col-6 col-xl-3">
-        <div class="threat-card">
-            <div class="tc-accent" style="background:linear-gradient(90deg,#8b5cf6,#a78bfa);"></div>
+        <div class="threat-card">            
             <div class="tc-icon" style="background:rgba(139,92,246,.1);">
                 <i class="fas fa-triangle-exclamation" style="color:#8b5cf6;"></i>
             </div>
