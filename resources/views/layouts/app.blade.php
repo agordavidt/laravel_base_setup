@@ -39,7 +39,7 @@
         </nav>
 
         <div class="sidebar-footer">
-            <div class="sidebar-user">
+            {{-- <div class="sidebar-user">
                 <div class="user-avatar-initials">
                     {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 2)) }}
                 </div>
@@ -49,7 +49,7 @@
                         {{ str_replace('-', ' ', auth()->user()->getRoleNames()->first() ?? 'user') }}
                     </div>
                 </div>
-            </div>
+            </div> --}}
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit" class="sidebar-logout" data-label="Logout">
